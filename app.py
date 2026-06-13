@@ -94,7 +94,7 @@ Based on these search results, give a clear, accurate and helpful answer."""
     # add current question as the last message
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="deepseek-r1-distill-llama-70b",
         messages=messages,
         # now sending full conversation history!
         temperature=0.3,
