@@ -195,6 +195,14 @@ div:has(> [data-testid="stChatInput"]) {
     margin: 10px 0;
 }
 
+.upload-section {
+    background: #0a0a0a;
+    border: 1px solid rgba(255,69,0,0.2);
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 10px 0 16px;
+}
+
 hr { border-color: #1a1a1a !important; }
 p, span, label { color: #c8a898 !important; }
 ::-webkit-scrollbar { width: 4px; }
@@ -213,6 +221,9 @@ header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
+# ============================================================
+# Helper functions
+# ============================================================
 HISTORY_FILE = "chat_history.json"
 
 def load_all_sessions():
@@ -273,7 +284,9 @@ def analyze_image(image_file):
                 "content": [
                     {
                         "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_data}"
+                        }
                     },
                     {
                         "type": "text",
@@ -287,8 +300,10 @@ def analyze_image(image_file):
     return response.choices[0].message.content
 
 def needs_web_search(question):
-    no_search = ["hello", "hi", "hey", "how are you", "who are you",
-                 "thanks", "thank you", "bye", "ok", "okay", "joke"]
+    no_search = [
+        "hello", "hi", "hey", "how are you", "who are you",
+        "thanks", "thank you", "bye", "ok", "okay", "joke"
+    ]
     q = question.lower().strip()
     if len(q.split()) <= 2:
         return False
@@ -303,24 +318,34 @@ def get_answer(user_question, chat_history):
         search_context = f"\nWeb search results:\n{search_text}"
     else:
         search_context = ""
+
     messages = [
         {
             "role": "system",
-            "content": "You are JARVIS, an intelligent AI assistant. For greetings respond naturally. For factual questions use web search results. Always use conversation history for follow-up questions."
+            "content": "You are JARVIS, an intelligent AI assistant. For greetings respond naturally. For factual questions use web search results. Always use conversation history for follow-up questions. Give clear well structured answers."
         }
     ]
     for msg in chat_history:
         if msg["role"] in ["user", "assistant"]:
             messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": f"Question: {user_question}{search_context}"})
-    response = client.chat.completions.create(
+    messages.append({
+        "role": "user",
+        "content": f"Question: {user_question}{search_context}"
+    })
+
+    # stream=True tells Groq to send words one by one
+    # instead of waiting for the full response
+    stream = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=messages,
         temperature=0.3,
-        max_tokens=1024
+        max_tokens=1024,
+        stream=True
     )
-    return response.choices[0].message.content
-
+    return stream
+# ============================================================
+# Session state
+# ============================================================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "session_id" not in st.session_state:
@@ -329,16 +354,17 @@ if "session_title" not in st.session_state:
     st.session_state.session_title = "New Chat"
 if "show_upload" not in st.session_state:
     st.session_state.show_upload = False
-if "image_messages" not in st.session_state:
-    st.session_state.image_messages = []
 
+# ============================================================
+# SIDEBAR
+# ============================================================
 with st.sidebar:
     st.markdown("""
     <div style='text-align:center;padding:16px 0 12px'>
         <div style='font-family:Orbitron,monospace;font-size:18px;
         font-weight:700;color:#ff5500;letter-spacing:5px'>⬡ JARVIS</div>
-        <div style='font-size:10px;color:#442200;letter-spacing:3px;margin-top:5px'>
-        AI · WEB SEARCH · VISION</div>
+        <div style='font-size:10px;color:#442200;letter-spacing:3px;
+        margin-top:5px'>AI · WEB SEARCH · VISION</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -346,11 +372,12 @@ with st.sidebar:
 
     if st.button("＋  New Chat", use_container_width=True):
         if st.session_state.messages:
-            save_session(st.session_state.session_id,
-                        st.session_state.messages,
-                        st.session_state.session_title)
+            save_session(
+                st.session_state.session_id,
+                st.session_state.messages,
+                st.session_state.session_title
+            )
         st.session_state.messages = []
-        st.session_state.image_messages = []
         st.session_state.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         st.session_state.session_title = "New Chat"
         st.session_state.show_upload = False
@@ -370,34 +397,47 @@ with st.sidebar:
 
     all_sessions = load_all_sessions()
     if all_sessions:
-        sorted_sessions = sorted(all_sessions.items(), key=lambda x: x[0], reverse=True)
+        sorted_sessions = sorted(
+            all_sessions.items(),
+            key=lambda x: x[0],
+            reverse=True
+        )
         for session_id, session_data in sorted_sessions[:10]:
             col1, col2 = st.columns([5, 1])
             with col1:
                 title = session_data['title'][:28]
                 timestamp = session_data['timestamp']
-                if st.button(f"▶ {title}...\n{timestamp}",
-                            key=f"load_{session_id}",
-                            use_container_width=True):
+                if st.button(
+                    f"▶ {title}...\n{timestamp}",
+                    key=f"load_{session_id}",
+                    use_container_width=True
+                ):
                     if st.session_state.messages:
-                        save_session(st.session_state.session_id,
-                                    st.session_state.messages,
-                                    st.session_state.session_title)
+                        save_session(
+                            st.session_state.session_id,
+                            st.session_state.messages,
+                            st.session_state.session_title
+                        )
                     loaded = load_session(session_id)
                     if loaded:
                         st.session_state.messages = loaded["messages"]
                         st.session_state.session_title = loaded["title"]
                         st.session_state.session_id = session_id
-                        st.session_state.image_messages = []
                         st.rerun()
             with col2:
                 if st.button("✕", key=f"del_{session_id}"):
                     delete_session(session_id)
                     st.rerun()
     else:
-        st.markdown("<p style='color:#2a1000;font-size:12px;text-align:center;margin-top:20px'>No conversations yet</p>",
-                   unsafe_allow_html=True)
+        st.markdown("""
+        <p style='color:#2a1000;font-size:12px;
+        font-style:italic;text-align:center;margin-top:20px'>
+        No conversations yet</p>
+        """, unsafe_allow_html=True)
 
+# ============================================================
+# MAIN AREA
+# ============================================================
 st.markdown("""
 <div style='padding:40px 0 0'>
     <div class='jarvis-title'>J.A.R.V.I.S</div>
@@ -405,76 +445,122 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-if not st.session_state.messages and not st.session_state.image_messages:
+if not st.session_state.messages and not st.session_state.show_upload:
     st.markdown("""
     <div class='welcome-title'>How can I help you today?</div>
-    <div class='welcome-sub'>Ask me anything or click Analyze Image to upload a photo</div>
+    <div class='welcome-sub'>
+    Ask me anything or click 📷 Analyze Image in the sidebar to upload a photo
+    </div>
     """, unsafe_allow_html=True)
 
+# ============================================================
+# Image upload section - appears BELOW title, ABOVE chat
+# ============================================================
 if st.session_state.show_upload:
-    st.markdown("<div style='color:#663300;font-size:12px;margin:8px 0 4px'>📷 Select an image — Jarvis will identify it</div>",
-               unsafe_allow_html=True)
+    st.markdown("""
+    <div class='upload-section'>
+        <div style='color:#ff5500;font-size:13px;font-weight:600;
+        letter-spacing:1px;margin-bottom:12px'>
+        📷 Upload an image — Jarvis will identify it
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     uploaded_image = st.file_uploader(
-        "",
+        "Choose an image",
         type=["jpg", "jpeg", "png", "webp"],
-        label_visibility="collapsed",
-        key=f"uploader_{len(st.session_state.image_messages)}"
+        key="image_uploader"
     )
+
     if uploaded_image is not None:
         img_bytes = uploaded_image.read()
+
         col1, col2 = st.columns([1, 2])
         with col1:
             st.image(img_bytes, use_container_width=True)
         with col2:
-            with st.spinner("Jarvis is identifying..."):
+            with st.spinner("🔍 Jarvis is analyzing..."):
                 analysis = analyze_image(io.BytesIO(img_bytes))
+
             st.markdown(f"""
             <div class='analysis-box'>
-                <div style='color:#ff5500;font-size:11px;font-weight:600;
-                letter-spacing:2px;margin-bottom:10px'>⬡ JARVIS VISION</div>
+                <div style='color:#ff5500;font-size:11px;
+                font-weight:600;letter-spacing:2px;margin-bottom:10px'>
+                ⬡ JARVIS VISION ANALYSIS
+                </div>
                 <div style='color:#e8d5c8;font-size:14px;line-height:1.75'>
-                {analysis}</div>
+                {analysis}
+                </div>
             </div>
             """, unsafe_allow_html=True)
-        st.session_state.image_messages.append({
-            "type": "image",
-            "image_data": img_bytes,
-            "content": analysis,
-            "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        })
-        st.session_state.show_upload = False
 
+        if st.button("✕ Close Image Upload"):
+            st.session_state.show_upload = False
+            st.rerun()
+
+    st.divider()
+
+# ============================================================
+# Display chat messages
+# ============================================================
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# ============================================================
+# Chat input
+# ============================================================
 if prompt := st.chat_input("Message Jarvis..."):
     if st.session_state.session_title == "New Chat":
         st.session_state.session_title = prompt
+
     st.session_state.messages.append({
         "role": "user",
         "content": prompt,
         "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     })
+
     with st.chat_message("user"):
         st.markdown(prompt)
+
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-        for dots in ["●", "● ●", "● ● ●"]:
-            placeholder.markdown(
-                f"<span style='color:#ff4500;font-size:16px'>{dots}</span>",
-                unsafe_allow_html=True)
-            time.sleep(0.3)
-        placeholder.empty()
+        # show searching spinner only while fetching web results
         spinner_text = "Searching the web..." if needs_web_search(prompt) else "Thinking..."
         with st.spinner(spinner_text):
-            answer = get_answer(prompt, st.session_state.messages[:-1])
-        st.markdown(answer)
+            stream = get_answer(prompt, st.session_state.messages[:-1])
+        # stream is now a generator object — words come one by one
+
+        answer = ""
+        # empty string to collect the full answer
+
+        placeholder = st.empty()
+        # empty placeholder we will update word by word
+
+        for chunk in stream:
+            # each chunk is a small piece of the response
+            # chunk.choices[0].delta.content = the new word/token
+            if chunk.choices[0].delta.content is not None:
+                answer += chunk.choices[0].delta.content
+                # add new word to our collected answer
+
+                placeholder.markdown(
+                    answer + "▋",
+                    unsafe_allow_html=True
+                )
+                # show answer so far with blinking cursor ▋
+                # this gives the typing effect!
+
+        placeholder.markdown(answer)
+        # final render without the cursor
+
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
         "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     })
-    save_session(st.session_state.session_id,
-                st.session_state.messages,
-                st.session_state.session_title)
+
+    save_session(
+        st.session_state.session_id,
+        st.session_state.messages,
+        st.session_state.session_title
+    )
