@@ -9,6 +9,7 @@ import time
 import base64
 from PIL import Image
 import io
+from fpdf import FPDF
 
 load_dotenv()
 
@@ -172,6 +173,24 @@ div:has(> [data-testid="stChatInput"]) {
     transform: translateY(-1px) !important;
 }
 
+.stDownloadButton > button {
+    background: #000000 !important;
+    color: #ff5500 !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 10px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    transition: all 0.25s ease !important;
+    width: 100% !important;
+}
+
+.stDownloadButton > button:hover {
+    background: rgba(255,69,0,0.08) !important;
+    border-color: rgba(255,69,0,0.4) !important;
+    color: #ff6600 !important;
+    transform: translateY(-1px) !important;
+}
+
 .history-card {
     background: #000000;
     border: 1px solid #1a1a1a;
@@ -255,6 +274,49 @@ def load_session(session_id):
         return sessions[session_id]
     return None
 
+def export_chat_as_pdf(messages, title):
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Title
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(255, 80, 0)
+    pdf.cell(0, 12, "JARVIS - Chat Export", ln=True, align="C")
+
+    # Subtitle
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(150, 150, 150)
+    pdf.cell(0, 8,
+        f"Exported on {datetime.now().strftime('%d %b %Y, %I:%M %p')}",
+        ln=True, align="C")
+
+    pdf.ln(6)
+    pdf.set_draw_color(255, 69, 0)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(8)
+
+    for message in messages:
+        if message["role"] == "user":
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_text_color(255, 100, 0)
+            pdf.cell(0, 8, "You:", ln=True)
+        else:
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_text_color(50, 100, 255)
+            pdf.cell(0, 8, "Jarvis:", ln=True)
+
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(40, 40, 40)
+
+        content = message["content"]
+        content = content.replace("**", "").replace("*", "").replace("#", "")
+        content = content.encode("latin-1", errors="replace").decode("latin-1")
+
+        pdf.multi_cell(0, 7, content)
+        pdf.ln(4)
+
+    return bytes(pdf.output())
+
 def search_web(query):
     url = "https://serpapi.com/search"
     params = {"engine": "google", "q": query, "api_key": SERPAPI_KEY, "num": 5}
@@ -318,7 +380,6 @@ def get_answer(user_question, chat_history):
         search_context = f"\nWeb search results:\n{search_text}"
     else:
         search_context = ""
-
     messages = [
         {
             "role": "system",
@@ -332,9 +393,6 @@ def get_answer(user_question, chat_history):
         "role": "user",
         "content": f"Question: {user_question}{search_context}"
     })
-
-    # stream=True tells Groq to send words one by one
-    # instead of waiting for the full response
     stream = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=messages,
@@ -343,6 +401,7 @@ def get_answer(user_question, chat_history):
         stream=True
     )
     return stream
+
 # ============================================================
 # Session state
 # ============================================================
@@ -386,6 +445,19 @@ with st.sidebar:
     if st.button("📷  Analyze Image", use_container_width=True):
         st.session_state.show_upload = not st.session_state.show_upload
         st.rerun()
+
+    if st.session_state.messages:
+        pdf_bytes = export_chat_as_pdf(
+            st.session_state.messages,
+            st.session_state.session_title
+        )
+        st.download_button(
+            label="📄  Export as PDF",
+            data=pdf_bytes,
+            file_name=f"jarvis_{datetime.now().strftime('%d%m%Y_%H%M')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 
     st.divider()
 
@@ -449,12 +521,12 @@ if not st.session_state.messages and not st.session_state.show_upload:
     st.markdown("""
     <div class='welcome-title'>How can I help you today?</div>
     <div class='welcome-sub'>
-    Ask me anything or click 📷 Analyze Image in the sidebar to upload a photo
+    Ask me anything or click 📷 Analyze Image in the sidebar
     </div>
     """, unsafe_allow_html=True)
 
 # ============================================================
-# Image upload section - appears BELOW title, ABOVE chat
+# Image upload section
 # ============================================================
 if st.session_state.show_upload:
     st.markdown("""
@@ -474,23 +546,19 @@ if st.session_state.show_upload:
 
     if uploaded_image is not None:
         img_bytes = uploaded_image.read()
-
         col1, col2 = st.columns([1, 2])
         with col1:
             st.image(img_bytes, use_container_width=True)
         with col2:
             with st.spinner("🔍 Jarvis is analyzing..."):
                 analysis = analyze_image(io.BytesIO(img_bytes))
-
             st.markdown(f"""
             <div class='analysis-box'>
                 <div style='color:#ff5500;font-size:11px;
                 font-weight:600;letter-spacing:2px;margin-bottom:10px'>
-                ⬡ JARVIS VISION ANALYSIS
-                </div>
+                ⬡ JARVIS VISION ANALYSIS</div>
                 <div style='color:#e8d5c8;font-size:14px;line-height:1.75'>
-                {analysis}
-                </div>
+                {analysis}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -524,34 +592,19 @@ if prompt := st.chat_input("Message Jarvis..."):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # show searching spinner only while fetching web results
         spinner_text = "Searching the web..." if needs_web_search(prompt) else "Thinking..."
         with st.spinner(spinner_text):
             stream = get_answer(prompt, st.session_state.messages[:-1])
-        # stream is now a generator object — words come one by one
 
         answer = ""
-        # empty string to collect the full answer
-
         placeholder = st.empty()
-        # empty placeholder we will update word by word
 
         for chunk in stream:
-            # each chunk is a small piece of the response
-            # chunk.choices[0].delta.content = the new word/token
             if chunk.choices[0].delta.content is not None:
                 answer += chunk.choices[0].delta.content
-                # add new word to our collected answer
-
-                placeholder.markdown(
-                    answer + "▋",
-                    unsafe_allow_html=True
-                )
-                # show answer so far with blinking cursor ▋
-                # this gives the typing effect!
+                placeholder.markdown(answer + "▋", unsafe_allow_html=True)
 
         placeholder.markdown(answer)
-        # final render without the cursor
 
     st.session_state.messages.append({
         "role": "assistant",
