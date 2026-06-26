@@ -19,6 +19,13 @@ SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 
 client = Groq(api_key=GROQ_API_KEY)
 
+st.set_page_config(
+    page_title="Jarvis AI",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700&display=swap');
@@ -32,6 +39,10 @@ st.markdown("""
 [data-testid="stSidebar"] {
     background: #000000 !important;
     border-right: 1px solid #1a1a1a !important;
+}
+
+[data-testid="stSidebarNav"] {
+    display: none !important;
 }
 
 @keyframes slideIn {
@@ -223,6 +234,24 @@ div:has(> [data-testid="stChatInput"]) {
     margin: 10px 0 16px;
 }
 
+/* Mobile styles */
+@media (max-width: 768px) {
+    .jarvis-title {
+        font-size: 1.8rem !important;
+        letter-spacing: 3px !important;
+    }
+    .jarvis-sub {
+        font-size: 9px !important;
+        letter-spacing: 2px !important;
+    }
+    .welcome-title {
+        font-size: 18px !important;
+    }
+    [data-testid="stChatMessage"] p {
+        font-size: 14px !important;
+    }
+}
+
 hr { border-color: #1a1a1a !important; }
 p, span, label { color: #c8a898 !important; }
 ::-webkit-scrollbar { width: 4px; }
@@ -242,7 +271,7 @@ header { visibility: hidden; }
 """, unsafe_allow_html=True)
 
 # ============================================================
-# Device ID - unique per browser session
+# Device ID
 # ============================================================
 def get_device_id():
     if "device_id" not in st.session_state:
@@ -250,7 +279,7 @@ def get_device_id():
     return st.session_state.device_id
 
 # ============================================================
-# Helper functions - private per device
+# History functions
 # ============================================================
 HISTORY_FILE = "chat_history.json"
 
@@ -298,6 +327,9 @@ def load_session(session_id):
             return device_data.get(session_id, None)
     return None
 
+# ============================================================
+# PDF Export
+# ============================================================
 def export_chat_as_pdf(messages, title):
     pdf = FPDF()
     pdf.add_page()
@@ -331,6 +363,9 @@ def export_chat_as_pdf(messages, title):
         pdf.ln(4)
     return bytes(pdf.output())
 
+# ============================================================
+# Web search
+# ============================================================
 def search_web(query):
     url = "https://serpapi.com/search"
     params = {"engine": "google", "q": query, "api_key": SERPAPI_KEY, "num": 5}
@@ -345,6 +380,9 @@ def search_web(query):
         search_text += f"{i+1}. {title}\n{snippet}\nSource: {link}\n\n"
     return search_text
 
+# ============================================================
+# Image analysis
+# ============================================================
 def analyze_image(image_file):
     image = Image.open(image_file)
     if image.mode != "RGB":
@@ -375,6 +413,9 @@ def analyze_image(image_file):
     )
     return response.choices[0].message.content
 
+# ============================================================
+# Smart search detection
+# ============================================================
 def needs_web_search(question):
     no_search = [
         "hello", "hi", "hey", "how are you", "who are you",
@@ -388,6 +429,9 @@ def needs_web_search(question):
             return False
     return True
 
+# ============================================================
+# Get answer with streaming
+# ============================================================
 def get_answer(user_question, chat_history):
     if needs_web_search(user_question):
         search_text = search_web(user_question)
@@ -521,6 +565,13 @@ with st.sidebar:
         No conversations yet</p>
         """, unsafe_allow_html=True)
 
+    st.divider()
+    st.markdown("""
+    <p style='color:#2a1000;font-size:11px;text-align:center'>
+    📱 On mobile? Tap ☰ top left to open this menu
+    </p>
+    """, unsafe_allow_html=True)
+
 # ============================================================
 # MAIN AREA
 # ============================================================
@@ -535,7 +586,7 @@ if not st.session_state.messages and not st.session_state.show_upload:
     st.markdown("""
     <div class='welcome-title'>How can I help you today?</div>
     <div class='welcome-sub'>
-    Ask me anything or click 📷 Analyze Image in the sidebar
+    Ask me anything — tap ☰ top left on mobile to access all features
     </div>
     """, unsafe_allow_html=True)
 
