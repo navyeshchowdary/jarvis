@@ -10,6 +10,7 @@ import base64
 from PIL import Image
 import io
 from fpdf import FPDF
+import uuid
 
 load_dotenv()
 
@@ -241,60 +242,77 @@ header { visibility: hidden; }
 """, unsafe_allow_html=True)
 
 # ============================================================
-# Helper functions
+# Device ID - unique per browser session
+# ============================================================
+def get_device_id():
+    if "device_id" not in st.session_state:
+        st.session_state.device_id = str(uuid.uuid4())
+    return st.session_state.device_id
+
+# ============================================================
+# Helper functions - private per device
 # ============================================================
 HISTORY_FILE = "chat_history.json"
 
 def load_all_sessions():
+    device_id = get_device_id()
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "r") as f:
-            return json.load(f)
+            all_data = json.load(f)
+            return all_data.get(device_id, {})
     return {}
 
 def save_session(session_id, messages, title):
-    sessions = load_all_sessions()
-    sessions[session_id] = {
+    device_id = get_device_id()
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            all_data = json.load(f)
+    else:
+        all_data = {}
+    if device_id not in all_data:
+        all_data[device_id] = {}
+    all_data[device_id][session_id] = {
         "title": title,
         "messages": messages,
         "timestamp": datetime.now().strftime("%d %b, %I:%M %p")
     }
     with open(HISTORY_FILE, "w") as f:
-        json.dump(sessions, f, indent=2)
+        json.dump(all_data, f, indent=2)
 
 def delete_session(session_id):
-    sessions = load_all_sessions()
-    if session_id in sessions:
-        del sessions[session_id]
-        with open(HISTORY_FILE, "w") as f:
-            json.dump(sessions, f, indent=2)
+    device_id = get_device_id()
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            all_data = json.load(f)
+        if device_id in all_data and session_id in all_data[device_id]:
+            del all_data[device_id][session_id]
+            with open(HISTORY_FILE, "w") as f:
+                json.dump(all_data, f, indent=2)
 
 def load_session(session_id):
-    sessions = load_all_sessions()
-    if session_id in sessions:
-        return sessions[session_id]
+    device_id = get_device_id()
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r") as f:
+            all_data = json.load(f)
+            device_data = all_data.get(device_id, {})
+            return device_data.get(session_id, None)
     return None
 
 def export_chat_as_pdf(messages, title):
     pdf = FPDF()
     pdf.add_page()
-
-    # Title
     pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(255, 80, 0)
     pdf.cell(0, 12, "JARVIS - Chat Export", ln=True, align="C")
-
-    # Subtitle
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(150, 150, 150)
     pdf.cell(0, 8,
         f"Exported on {datetime.now().strftime('%d %b %Y, %I:%M %p')}",
         ln=True, align="C")
-
     pdf.ln(6)
     pdf.set_draw_color(255, 69, 0)
     pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(8)
-
     for message in messages:
         if message["role"] == "user":
             pdf.set_font("Helvetica", "B", 11)
@@ -304,17 +322,13 @@ def export_chat_as_pdf(messages, title):
             pdf.set_font("Helvetica", "B", 11)
             pdf.set_text_color(50, 100, 255)
             pdf.cell(0, 8, "Jarvis:", ln=True)
-
         pdf.set_font("Helvetica", "", 10)
         pdf.set_text_color(40, 40, 40)
-
         content = message["content"]
         content = content.replace("**", "").replace("*", "").replace("#", "")
         content = content.encode("latin-1", errors="replace").decode("latin-1")
-
         pdf.multi_cell(0, 7, content)
         pdf.ln(4)
-
     return bytes(pdf.output())
 
 def search_web(query):
@@ -525,9 +539,6 @@ if not st.session_state.messages and not st.session_state.show_upload:
     </div>
     """, unsafe_allow_html=True)
 
-# ============================================================
-# Image upload section
-# ============================================================
 if st.session_state.show_upload:
     st.markdown("""
     <div class='upload-section'>
@@ -537,13 +548,11 @@ if st.session_state.show_upload:
         </div>
     </div>
     """, unsafe_allow_html=True)
-
     uploaded_image = st.file_uploader(
         "Choose an image",
         type=["jpg", "jpeg", "png", "webp"],
         key="image_uploader"
     )
-
     if uploaded_image is not None:
         img_bytes = uploaded_image.read()
         col1, col2 = st.columns([1, 2])
@@ -561,57 +570,41 @@ if st.session_state.show_upload:
                 {analysis}</div>
             </div>
             """, unsafe_allow_html=True)
-
-        if st.button("✕ Close Image Upload"):
-            st.session_state.show_upload = False
-            st.rerun()
-
+    if st.button("✕ Close Image Upload"):
+        st.session_state.show_upload = False
+        st.rerun()
     st.divider()
 
-# ============================================================
-# Display chat messages
-# ============================================================
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ============================================================
-# Chat input
-# ============================================================
 if prompt := st.chat_input("Message Jarvis..."):
     if st.session_state.session_title == "New Chat":
         st.session_state.session_title = prompt
-
     st.session_state.messages.append({
         "role": "user",
         "content": prompt,
         "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     })
-
     with st.chat_message("user"):
         st.markdown(prompt)
-
     with st.chat_message("assistant"):
         spinner_text = "Searching the web..." if needs_web_search(prompt) else "Thinking..."
         with st.spinner(spinner_text):
             stream = get_answer(prompt, st.session_state.messages[:-1])
-
         answer = ""
         placeholder = st.empty()
-
         for chunk in stream:
             if chunk.choices[0].delta.content is not None:
                 answer += chunk.choices[0].delta.content
                 placeholder.markdown(answer + "▋", unsafe_allow_html=True)
-
         placeholder.markdown(answer)
-
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
         "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     })
-
     save_session(
         st.session_state.session_id,
         st.session_state.messages,

@@ -51,68 +51,6 @@
     ],
     "timestamp": "18 Jun, 04:07 PM"
   },
-  "20260613_213421": {
-    "title": "hi'",
-    "messages": [
-      {
-        "role": "user",
-        "content": "hi'",
-        "timestamp": "20260613_213518_256863"
-      },
-      {
-        "role": "assistant",
-        "content": "Hello. It's nice to meet you. Is there something I can help you with or would you like to chat?",
-        "timestamp": "20260613_213519_748981"
-      },
-      {
-        "role": "user",
-        "content": "where are u from",
-        "timestamp": "20260613_213529_333051"
-      },
-      {
-        "role": "assistant",
-        "content": "It seems like you're asking about the meaning of \"where are you from\" and how to respond to it. Based on the search results, when someone asks \"where are you from,\" they're usually asking about the place where you grew up, your hometown, or the city, state, and/or country you consider your origin.\n\nIn your case, the person asked about your cellphone number starting with 123 and assumed you might be from city A, but you only lived there for a few years. This implies that the person was trying to make a connection between your phone number and your place of origin.\n\nIf someone asks you \"where are you from,\" you can respond by sharing your hometown, the city or state you grew up in, or even your country of origin. For example, you could say, \"I'm from [city/state/country],\" or \"I grew up in [city/state/country].\" \n\nAs for me, I'm an artificial intelligence language model, so I don't have a physical location or origin. I exist solely in the digital realm and can assist you from anywhere in the world. How would you like to respond to someone who asks you \"where are you from\"?",
-        "timestamp": "20260613_213533_271984"
-      }
-    ],
-    "timestamp": "18 Jun, 04:09 PM"
-  },
-  "20260618_160127": {
-    "title": "helllo",
-    "messages": [
-      {
-        "role": "user",
-        "content": "helllo",
-        "timestamp": "20260618_160139_494546"
-      },
-      {
-        "role": "assistant",
-        "content": "Hello. It's nice to meet you. Is there something I can help you with or would you like to chat?",
-        "timestamp": "20260618_160140_422117"
-      },
-      {
-        "role": "user",
-        "content": "what are the famous places in kothagudem",
-        "timestamp": "20260618_160203_472503"
-      },
-      {
-        "role": "assistant",
-        "content": "Kothagudem has several famous places to visit. Based on the search results, some of the top attractions in Kothagudem include:\n\n1. **Rudrampur Park (Pragathi Vanam)**: A popular park in the area.\n2. **Suguna Gardens**: A beautiful garden to visit.\n3. **Central Park, Kothagudem**: A central location for recreation and relaxation.\n4. **Sri Seetha Rama Chandra Swamy Temple**: A temple with a 4.6 rating on Tripadvisor.\n5. **Bogatha Waterfall**: A waterfall with a 4.2 rating on Tripadvisor.\n6. **Kinnerasani Deer Park**: A park with deer and other wildlife.\n7. **Kinnerasani Wild Life Sanctuary**: A sanctuary for wildlife enthusiasts.\n8. **Peta Water Falls**: A scenic waterfall to visit.\n9. **Kinnerasani Bridge**: A bridge with scenic views.\n10. **Bamboo Forest**: A forest with bamboo trees.\n\nAdditionally, there are other nature attractions like **Sccl Park**, **Jammibanda park**, and **Badeti Park**. These are just a few of the many places to visit in Kothagudem. Is there a specific type of attraction you're interested in?",
-        "timestamp": "20260618_160207_139347"
-      },
-      {
-        "role": "user",
-        "content": "tell me todays news",
-        "timestamp": "20260618_160242_588415"
-      },
-      {
-        "role": "assistant",
-        "content": "Here are some of today's top news stories from various sources:\n\n**US News**\n\n* Tornadoes have been reported in Illinois and Iowa as severe weather affects the Midwest (CBS News)\n* The US government has told states to deal with unemployment fraud or face penalties (ABC News)\n* The Knicks have accepted an invitation to visit President Trump at the White House, according to team owner James Dolan (CBS News)\n\n**World News**\n\n* Canada's Carney isn't having a meeting with Trump at the G7 summit, but says it's not a snub (ABC News)\n* There have been developments in the US-Iran agreement, with a major Gulf breakthrough taking shape (Fox News)\n\n**Other News**\n\n* A teenager was killed after a horse-drawn carriage bolted and flipped near a popular tourist spot (Fox News)\n* The latest news on business, politics, health, and pop culture can be found on NBC News and NPR\n\nPlease note that these are just a few of the many news stories available, and you can visit the sources listed above for more information and updates. Would you like me to elaborate on any of these stories or provide more information on a specific topic?",
-        "timestamp": "20260618_160245_127965"
-      }
-    ],
-    "timestamp": "18 Jun, 04:09 PM"
-  },
   "20260618_160733": {
     "title": "todays news",
     "messages": [
@@ -128,5 +66,43 @@
       }
     ],
     "timestamp": "18 Jun, 04:09 PM"
+  },
+  "7d54bcea-a165-4d76-84f2-a40b7e05ff0f": {
+    "20260626_160007": {
+      "title": "hello",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hello",
+          "timestamp": "20260626_160016_616671"
+        },
+        {
+          "role": "assistant",
+          "content": "Hello. It's nice to meet you. Is there something I can help you with or would you like to chat?",
+          "timestamp": "20260626_160017_371414"
+        },
+        {
+          "role": "user",
+          "content": "who are you",
+          "timestamp": "20260626_160026_934262"
+        },
+        {
+          "role": "assistant",
+          "content": "I am JARVIS, an intelligent AI assistant. I'm here to help answer your questions, provide information, and assist with tasks to the best of my abilities. I'm a computer program designed to simulate conversation, learn from interactions, and generate human-like responses. I'm at your service, so please feel free to ask me anything.",
+          "timestamp": "20260626_160027_350696"
+        },
+        {
+          "role": "user",
+          "content": "whats the news today",
+          "timestamp": "20260626_160044_566172"
+        },
+        {
+          "role": "assistant",
+          "content": "It seems like there are several significant news stories unfolding today. Let me summarize them for you:\n\n1. **Venezuela Earthquakes**: A devastating earthquake has struck Venezuela, resulting in around 235 deaths and 4,300 injuries, according to the country's health minister. The disaster has caused widespread destruction, and the situation is being closely monitored.\n2. **Supreme Court Rulings**: The US Supreme Court has made a few notable decisions, including allowing the Trump administration to turn away asylum seekers at the border and permitting the cancellation of Temporary Protected Status (TPS) for Haitians and Syrians.\n3. **Iran Strikes Cargo Ship**: In a concerning development, Iran has struck a cargo ship on a UN-backed route in the Strait of Hormuz.\n4. **Fire Engulfs Pennsylvania Factory**: A fire has broken out at a factory in Pennsylvania, although details about the incident are still emerging.\n5. **Dolly Parton Opens Truck Stop**: On a more positive note, Dolly Parton has opened a new truck stop in Tennessee.\n\nThese are just a few of the major news stories from around the world today. If you'd like more information on any of these topics, feel free to ask, and I'll do my best to provide more details.",
+          "timestamp": "20260626_160053_573181"
+        }
+      ],
+      "timestamp": "26 Jun, 04:01 PM"
+    }
   }
 }
