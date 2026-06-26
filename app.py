@@ -23,7 +23,7 @@ st.set_page_config(
     page_title="Jarvis AI",
     page_icon="🤖",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -36,14 +36,8 @@ st.markdown("""
     background-image: radial-gradient(ellipse at top center, #1c0500 0%, #000000 65%);
 }
 
-[data-testid="stSidebar"] {
-    background: #000000 !important;
-    border-right: 1px solid #1a1a1a !important;
-}
-
-[data-testid="stSidebarNav"] {
-    display: none !important;
-}
+[data-testid="stSidebar"] { display: none !important; }
+[data-testid="collapsedControl"] { display: none !important; }
 
 @keyframes slideIn {
     from { opacity: 0; transform: translateY(12px); }
@@ -78,7 +72,7 @@ st.markdown("""
     color: #ff5500 !important;
     font-size: 22px;
     font-weight: 600;
-    margin-top: 40px;
+    margin-top: 20px;
     margin-bottom: 8px;
 }
 
@@ -200,21 +194,6 @@ div:has(> [data-testid="stChatInput"]) {
     background: rgba(255,69,0,0.08) !important;
     border-color: rgba(255,69,0,0.4) !important;
     color: #ff6600 !important;
-    transform: translateY(-1px) !important;
-}
-
-.history-card {
-    background: #000000;
-    border: 1px solid #1a1a1a;
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin: 5px 0;
-    transition: all 0.25s ease;
-}
-
-.history-card:hover {
-    background: rgba(255,69,0,0.05);
-    border-color: rgba(255,69,0,0.25);
 }
 
 .analysis-box {
@@ -234,22 +213,28 @@ div:has(> [data-testid="stChatInput"]) {
     margin: 10px 0 16px;
 }
 
-/* Mobile styles */
-@media (max-width: 768px) {
-    .jarvis-title {
-        font-size: 1.8rem !important;
-        letter-spacing: 3px !important;
-    }
-    .jarvis-sub {
-        font-size: 9px !important;
-        letter-spacing: 2px !important;
-    }
-    .welcome-title {
-        font-size: 18px !important;
-    }
-    [data-testid="stChatMessage"] p {
-        font-size: 14px !important;
-    }
+.history-section {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 10px 0;
+}
+
+.history-item {
+    background: #000000;
+    border: 1px solid #1a1a1a;
+    border-left: 3px solid #ff4500;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 5px 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    background: rgba(255,69,0,0.05);
+    border-color: rgba(255,69,0,0.3);
 }
 
 hr { border-color: #1a1a1a !important; }
@@ -267,6 +252,12 @@ p, span, label { color: #c8a898 !important; }
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 header { visibility: hidden; }
+
+@media (max-width: 768px) {
+    .jarvis-title { font-size: 1.8rem !important; letter-spacing: 3px !important; }
+    .jarvis-sub { font-size: 9px !important; }
+    .welcome-title { font-size: 18px !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -430,7 +421,7 @@ def needs_web_search(question):
     return True
 
 # ============================================================
-# Get answer with streaming
+# Get answer
 # ============================================================
 def get_answer(user_question, chat_history):
     if needs_web_search(user_question):
@@ -471,23 +462,26 @@ if "session_title" not in st.session_state:
     st.session_state.session_title = "New Chat"
 if "show_upload" not in st.session_state:
     st.session_state.show_upload = False
+if "show_history" not in st.session_state:
+    st.session_state.show_history = False
 
 # ============================================================
-# SIDEBAR
+# MAIN AREA
 # ============================================================
-with st.sidebar:
-    st.markdown("""
-    <div style='text-align:center;padding:16px 0 12px'>
-        <div style='font-family:Orbitron,monospace;font-size:18px;
-        font-weight:700;color:#ff5500;letter-spacing:5px'>⬡ JARVIS</div>
-        <div style='font-size:10px;color:#442200;letter-spacing:3px;
-        margin-top:5px'>AI · WEB SEARCH · VISION</div>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div style='padding:30px 0 0'>
+    <div class='jarvis-title'>J.A.R.V.I.S</div>
+    <div class='jarvis-sub'>Just A Rather Very Intelligent System</div>
+</div>
+""", unsafe_allow_html=True)
 
-    st.divider()
+# ============================================================
+# TOP ACTION BUTTONS - always visible on all devices
+# ============================================================
+col1, col2, col3, col4 = st.columns(4)
 
-    if st.button("＋  New Chat", use_container_width=True):
+with col1:
+    if st.button("＋ New Chat", use_container_width=True):
         if st.session_state.messages:
             save_session(
                 st.session_state.session_id,
@@ -498,31 +492,48 @@ with st.sidebar:
         st.session_state.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         st.session_state.session_title = "New Chat"
         st.session_state.show_upload = False
+        st.session_state.show_history = False
         st.rerun()
 
-    if st.button("📷  Analyze Image", use_container_width=True):
+with col2:
+    if st.button("📷 Image", use_container_width=True):
         st.session_state.show_upload = not st.session_state.show_upload
+        st.session_state.show_history = False
         st.rerun()
 
+with col3:
+    if st.button("💬 History", use_container_width=True):
+        st.session_state.show_history = not st.session_state.show_history
+        st.session_state.show_upload = False
+        st.rerun()
+
+with col4:
     if st.session_state.messages:
         pdf_bytes = export_chat_as_pdf(
             st.session_state.messages,
             st.session_state.session_title
         )
         st.download_button(
-            label="📄  Export as PDF",
+            label="📄 Export PDF",
             data=pdf_bytes,
             file_name=f"jarvis_{datetime.now().strftime('%d%m%Y_%H%M')}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
+    else:
+        st.button("📄 Export PDF", disabled=True, use_container_width=True)
 
-    st.divider()
+st.markdown("<div style='margin-top:8px'></div>", unsafe_allow_html=True)
 
+# ============================================================
+# History panel
+# ============================================================
+if st.session_state.show_history:
     st.markdown("""
-    <div style='font-size:11px;color:#663300;letter-spacing:3px;
-    font-weight:600;margin-bottom:10px;text-transform:uppercase'>
-    Recent Chats</div>
+    <div class='history-section'>
+        <div style='color:#ff5500;font-size:13px;font-weight:600;
+        letter-spacing:1px;margin-bottom:12px'>💬 Recent Chats</div>
+    </div>
     """, unsafe_allow_html=True)
 
     all_sessions = load_all_sessions()
@@ -533,12 +544,12 @@ with st.sidebar:
             reverse=True
         )
         for session_id, session_data in sorted_sessions[:10]:
-            col1, col2 = st.columns([5, 1])
-            with col1:
-                title = session_data['title'][:28]
+            col_a, col_b = st.columns([5, 1])
+            with col_a:
+                title = session_data['title'][:35]
                 timestamp = session_data['timestamp']
                 if st.button(
-                    f"▶ {title}...\n{timestamp}",
+                    f"▶ {title}... — {timestamp}",
                     key=f"load_{session_id}",
                     use_container_width=True
                 ):
@@ -553,43 +564,25 @@ with st.sidebar:
                         st.session_state.messages = loaded["messages"]
                         st.session_state.session_title = loaded["title"]
                         st.session_state.session_id = session_id
+                        st.session_state.show_history = False
                         st.rerun()
-            with col2:
+            with col_b:
                 if st.button("✕", key=f"del_{session_id}"):
                     delete_session(session_id)
                     st.rerun()
     else:
         st.markdown("""
-        <p style='color:#2a1000;font-size:12px;
-        font-style:italic;text-align:center;margin-top:20px'>
-        No conversations yet</p>
+        <p style='color:#442200;font-size:13px;
+        text-align:center;padding:10px'>
+        No conversations yet
+        </p>
         """, unsafe_allow_html=True)
 
     st.divider()
-    st.markdown("""
-    <p style='color:#2a1000;font-size:11px;text-align:center'>
-    📱 On mobile? Tap ☰ top left to open this menu
-    </p>
-    """, unsafe_allow_html=True)
 
 # ============================================================
-# MAIN AREA
+# Image upload panel
 # ============================================================
-st.markdown("""
-<div style='padding:40px 0 0'>
-    <div class='jarvis-title'>J.A.R.V.I.S</div>
-    <div class='jarvis-sub'>Just A Rather Very Intelligent System</div>
-</div>
-""", unsafe_allow_html=True)
-
-if not st.session_state.messages and not st.session_state.show_upload:
-    st.markdown("""
-    <div class='welcome-title'>How can I help you today?</div>
-    <div class='welcome-sub'>
-    Ask me anything — tap ☰ top left on mobile to access all features
-    </div>
-    """, unsafe_allow_html=True)
-
 if st.session_state.show_upload:
     st.markdown("""
     <div class='upload-section'>
@@ -599,11 +592,13 @@ if st.session_state.show_upload:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
     uploaded_image = st.file_uploader(
         "Choose an image",
         type=["jpg", "jpeg", "png", "webp"],
         key="image_uploader"
     )
+
     if uploaded_image is not None:
         img_bytes = uploaded_image.read()
         col1, col2 = st.columns([1, 2])
@@ -621,25 +616,45 @@ if st.session_state.show_upload:
                 {analysis}</div>
             </div>
             """, unsafe_allow_html=True)
-    if st.button("✕ Close Image Upload"):
+
+    if st.button("✕ Close"):
         st.session_state.show_upload = False
         st.rerun()
+
     st.divider()
 
+# ============================================================
+# Welcome message
+# ============================================================
+if not st.session_state.messages:
+    st.markdown("""
+    <div class='welcome-title'>How can I help you today?</div>
+    <div class='welcome-sub'>Ask me anything about news, sports, politics, science and more</div>
+    """, unsafe_allow_html=True)
+
+# ============================================================
+# Chat messages
+# ============================================================
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# ============================================================
+# Chat input
+# ============================================================
 if prompt := st.chat_input("Message Jarvis..."):
     if st.session_state.session_title == "New Chat":
         st.session_state.session_title = prompt
+
     st.session_state.messages.append({
         "role": "user",
         "content": prompt,
         "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     })
+
     with st.chat_message("user"):
         st.markdown(prompt)
+
     with st.chat_message("assistant"):
         spinner_text = "Searching the web..." if needs_web_search(prompt) else "Thinking..."
         with st.spinner(spinner_text):
@@ -651,11 +666,13 @@ if prompt := st.chat_input("Message Jarvis..."):
                 answer += chunk.choices[0].delta.content
                 placeholder.markdown(answer + "▋", unsafe_allow_html=True)
         placeholder.markdown(answer)
+
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer,
         "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     })
+
     save_session(
         st.session_state.session_id,
         st.session_state.messages,
